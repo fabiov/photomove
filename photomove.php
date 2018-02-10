@@ -68,7 +68,7 @@ while (($sourceFile = fgets($handle)) !== false) {
         $extension = strtolower($pathInfo['extension']);
         do {
             $suffix = $i ? "_$i" : '';
-            $destFile = "$destDir/" . $date->format('Y-m-d_H.i') . "$suffix.$extension";
+            $destFile = "$destDir/" . $date->format('Y-m-d_H.i.s') . "$suffix.$extension";
             $i++;
         } while (file_exists($destFile));
 
