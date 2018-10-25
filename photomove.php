@@ -1,13 +1,30 @@
 #!/usr/bin/php
 <?php
 
-// default values
-$SOURCE  = '.';
-$DEST    = '.';
+function help()
+{
+    $scriptName = $_SERVER['argv'][0];
+    echo <<< EOF
+$scriptName -s <source-dir> -d <destination-dir> [options]
+    -s source directory
+    -d destination directory
+    -h help
+    -m move files instead copy
+    --dry-run execute script without move or copy files
+EOF;
 
-$shortopts = 'd:s:';  // Required value
-//$shortopts .= "v::"; // Optional value
-//$shortopts .= "abc"; // These options do not accept values
+}
+
+// default values
+$SOURCE             = '.';
+$DEST               = '.';
+$command            = 'copy';
+$commandDescription = 'copy';
+$dryRun             = false;
+
+$shortopts  = 'd:s:';   // Required value
+$shortopts .= 'm';      // These options do not accept values
+//$shortopts .= "v::";  // Optional value
 
 //$longopts  = array(
 //    "required:",     // Required value
@@ -15,21 +32,29 @@ $shortopts = 'd:s:';  // Required value
 //    "option",        // No value
 //    "opt",           // No value
 //);
-$options = getopt($shortopts/*, $longopts*/);
+$longopts = ['dry-run'];
+$options = getopt($shortopts, $longopts);
 
 if (isset($options['s'])) {
-    $SOURCE = $options['s'];
+    $SOURCE = rtrim($options['s'], ' /');
     if (!is_dir($SOURCE)) {
         echo "invalid source directory\n";
         exit(1);
     }
 }
 if (isset($options['d'])) {
-    $DEST = $options['d'];
+    $DEST = rtrim($options['d'], ' /');
     if (!is_dir($SOURCE)) {
         echo "invalid destination directory\n";
         exit(1);
     }
+}
+if (isset($options['m'])) {
+    $command = 'rename';
+    $commandDescription = 'move';
+}
+if (isset($options['dry-run'])) {
+    $dryRun = true;
 }
 
 echo "Looking for supported files...\n";
@@ -72,11 +97,13 @@ while (($sourceFile = fgets($handle)) !== false) {
             $i++;
         } while (file_exists($destFile));
 
-        echo " move to $destFile";
+        echo " $commandDescription to $destFile";
 
-        if (!rename($sourceFile, $destFile)) {
-            echo "Can not move $sourceFile to $destFile";
-            exit(1);
+        if (!$dryRun) {
+            if (!$command($sourceFile, $destFile)) {
+                echo "Can not $commandDescription $sourceFile to $destFile";
+                exit(1);
+            }
         }
     } else {
         $errors++;
